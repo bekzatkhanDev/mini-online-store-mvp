@@ -1,51 +1,86 @@
-// src/app/(auth)/login/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { login } from "@/features/auth/services/authService";
+import { useAuth } from "@/features/auth/context/AuthContext";
 
 export default function LoginPage() {
-  const { loginWithEmail, loginWithGoogle, user, loading } = useAuth();
   const router = useRouter();
-
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
+  // Если пользователь уже вошёл — переадресация в админку
+  if (user) {
+    router.push("/dashboard");
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
+
     try {
-      await loginWithEmail(email, pass);
-      router.push("/"); // redirect after login
+      await login(email, password);
+      router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Ошибка входа");
+      console.error("Ошибка входа:", err.message);
+      setError("Неверный логин или пароль");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <main className="p-6 max-w-md mx-auto">
-      <h1 className="text-2xl mb-4">Вход</h1>
-      <form onSubmit={submit} className="space-y-3">
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full p-2 border" />
-        <input value={pass} onChange={(e) => setPass(e.target.value)} placeholder="Пароль" type="password" className="w-full p-2 border" />
-        <button className="w-full p-2 bg-blue-600 text-white">Войти</button>
-        <button
-          type="button"
-          onClick={async () => {
-            try {
-              await loginWithGoogle();
-              router.push("/");
-            } catch (err: any) {
-              setError(err.message || "Ошибка Google входа");
-            }
-          }}
-          className="w-full p-2 border mt-2"
-        >
-          Войти с Google
-        </button>
-        {error && <div className="text-red-600 mt-2">{error}</div>}
-      </form>
-    </main>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-sm p-6 bg-white rounded-2xl shadow-md">
+        <h1 className="text-2xl font-semibold text-center mb-6">
+          Вход в админку
+        </h1>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Пароль
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-500 text-center">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          >
+            {loading ? "Вход..." : "Войти"}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }

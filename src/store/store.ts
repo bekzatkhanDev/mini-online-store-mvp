@@ -1,9 +1,29 @@
-import { configureStore } from "@reduxjs/toolkit";
+// store/store.ts
+"use client";
 
-export const store = configureStore({
-    reducer: {},
-});
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 
-export type RootState = ReturnType<typeof store.getState>
+interface GlobalState {
+  theme: "light" | "dark";
+  sidebarOpen: boolean;
+  setTheme: (theme: "light" | "dark") => void;
+  toggleSidebar: () => void;
+}
 
-export type AppDispatch = typeof store.dispatch
+export const useAppStore = create<GlobalState>()(
+  devtools(
+    persist(
+      (set) => ({
+        theme: "light",
+        sidebarOpen: false,
+
+        setTheme: (theme) => set({ theme }),
+        toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      }),
+      {
+        name: "app-storage", // ключ для localStorage
+      }
+    )
+  )
+);
